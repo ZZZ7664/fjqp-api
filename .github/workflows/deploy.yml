@@ -35,3 +35,9 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           # 告诉 wrangler 不要再运行 wrangler.toml 里的 build 命令了，因为我们上面跑过了
           command: deploy --no-bundle
+
+      # 在编译步骤中加入 RUSTFLAGS
+      - name: Build project
+        run: worker-build --release
+        env:
+          RUSTFLAGS: "--cfg getrandom_backend=\"wasm_js\""    
