@@ -3,7 +3,7 @@ name: Deploy Worker
 on:
   push:
     branches:
-      - main  # 如果你的主分支叫 master，请把这里改成 master
+      - main
 
 jobs:
   deploy:
@@ -17,12 +17,21 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
+      # 使用缓存加快以后构建的速度
+      - name: Cache Cargo dependencies
+        uses: swatinem/rust-cache@v2
+
       - name: Install worker-build
         run: cargo install worker-build
+
+      # 在这里手动执行编译，确保 build 文件夹被创建
+      - name: Build project
+        run: worker-build --release
 
       - name: Deploy to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy
+          # 告诉 wrangler 不要再运行 wrangler.toml 里的 build 命令了，因为我们上面跑过了
+          command: deploy --no-bundle
