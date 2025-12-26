@@ -17,27 +17,19 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
-      # 使用缓存加快以后构建的速度
       - name: Cache Cargo dependencies
         uses: swatinem/rust-cache@v2
 
       - name: Install worker-build
         run: cargo install worker-build
 
-      # 在这里手动执行编译，确保 build 文件夹被创建
-      - name: Build project
-        run: worker-build --release
-
       - name: Deploy to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # 告诉 wrangler 不要再运行 wrangler.toml 里的 build 命令了，因为我们上面跑过了
-          command: deploy --no-bundle
-
-      # 在编译步骤中加入 RUSTFLAGS
-      - name: Build project
-        run: worker-build --release
+          # 关键点 1: 不要加 --no-bundle
+          # 关键点 2: 再次通过环境变量修复 getrandom 报错
+          command: deploy
         env:
-          RUSTFLAGS: "--cfg getrandom_backend=\"wasm_js\""    
+          RUSTFLAGS: "--cfg getrandom_backend=\"wasm_js\""
